@@ -1,0 +1,519 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <math.h>
+
+// Global variables
+int n;                  // Size of the game board
+char board[100][100];   // 2D array to represent the game board
+char player;            // Character representing the human player
+char computer;          // Character representing the computer player
+char playerchar_1;      // Character is chosen by player 1 in multiplayer mode
+char playerchar_2;      // Character is chosen by player 2 in multiplayer mode
+char player_1[100];      // Name of player 1
+char player_2[100];      // Name of player 2
+char checkwinner();
+// Function to reset the game board to empty spaces
+char resetboard() {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++)
+            board[i][j] = ' ';
+    }
+    return 0;
+}
+
+// Function to print the current state of the game board
+void printboard() {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++)
+            printf("| %c ", board[i][j]);
+        printf("|\n");
+
+        for (int j = 0; j < n; j++)
+            printf("|___");
+        printf("|\n");
+    }
+}
+
+// Function to count the number of free spaces on the game board
+int checkfreespaces() {
+    int freespace = n * n;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] != ' ')
+                freespace--;
+        }
+    }
+    return freespace;
+}
+
+// Function for the human player's move in single-player mode
+void playermove() {
+    int x, y;
+    do {
+        printf("Enter row from 1-n : ");
+        scanf("%d", &x);
+        printf("Enter column from 1-n : ");
+        scanf("%d", &y);
+        y--, x--;
+
+        if (board[x][y] != ' ')
+            printf("Invalid\n");
+        else {
+            board[x][y] = player;
+            break;
+        }
+    } while (board[x][y] != ' ');
+}
+
+// Function for player 1's move in multiplayer mode
+void player_1_move() {
+    int x, y;
+    do {
+        printf("Enter row from 1-n for %s: ", player_1);
+        scanf("%d", &x);
+        printf("Enter column from 1-n for %s: ", player_1);
+        scanf("%d", &y);
+        y--, x--;
+
+        if (board[x][y] != ' ')
+            printf("Invalid\n");
+        else {
+            board[x][y] = playerchar_1;
+            break;
+        }
+    } while (board[x][y] != ' ');
+}
+
+// Function for player 2's move in multiplayer mode
+void player_2_move() {
+    int x, y;
+    do {
+        printf("Enter row from 1-n for %s: ", player_2);
+        scanf("%d", &x);
+        printf("Enter column from 1-n for %s: ", player_2);
+        scanf("%d", &y);
+        y--, x--;
+
+        if (board[x][y] != ' ')
+            printf("Invalid\n");
+        else {
+            board[x][y] = playerchar_2;
+            break;
+        }
+    } while (board[x][y] != ' ');
+}
+
+// Function to evaluate a line (row, column, or diagonal) based on the counts of computer and player symbols
+int evaluate_line(int count_computer, int count_player) {
+    if (count_computer == n - 1 && count_player == 0)
+        return 100;  // Potential win for the computer
+    else if (count_player == n - 1 && count_computer == 0)
+        return -100; // Potential win for the player
+    else if (count_computer == 0 && count_player > 0)
+        return -10;  // Potential block for the player
+    else if (count_player == 0 && count_computer > 0)
+        return 10;   // Potential block for the computer
+
+    return 0;  // No significant advantage or threat in this line
+}
+
+// Function to evaluate the state of the game and assign a heuristic value
+int evaluate_state() {
+    // Check rows
+    int sumrow = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n - 1; j++) {
+            if (board[i][j] == board[i][j + 1] && board[i][j] != ' ') {
+                sumrow = sumrow + 1;
+                if (sumrow == n - 1) {
+                    if (board[i][j] == computer)
+                        return 1000; // Winning value for computer
+                    if (board[i][j] == player)
+                        return -1000; // Winning value for player
+                }
+            }
+        }
+        sumrow = 0;
+    }
+
+    // Check columns
+    int sumcolumn = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n - 1; j++) {
+            if (board[j][i] == board[j + 1][i] && board[j][i] != ' ') {
+                sumcolumn = sumcolumn + 1;
+                if (sumcolumn == n - 1) {
+                    if (board[i][j] == computer)
+                        return 1000;
+                    if (board[i][j] == player)
+                        return -1000;
+                }
+            }
+        }
+        sumcolumn = 0;
+    }
+
+    // Check diagonals
+    //for left upper corner to right lower corner
+    int sumdiagonal1 = 0;
+    for (int i = 0; i < n - 1; i++) {
+        if (board[i][i] == board[i + 1][i + 1] && board[i][i] != ' ') {
+            sumdiagonal1 = sumdiagonal1 + 1;
+            if (sumdiagonal1 == n - 1) {
+                if (board[i][i] == computer)
+                    return 1000;
+                if (board[i][i] == player)
+                    return -1000;
+            }
+        }
+    }
+    //for right upper corner to left lower corner
+    int sumdiagonal2 = 0;
+    for (int i = 0; i < n; i++) {
+        if (board[i][n - i - 1] == board[i + 1][n - i - 2] && board[i][n - i - 1] != ' ') {
+            sumdiagonal2 = sumdiagonal2 + 1;
+            if (sumdiagonal2 == n - 1) {
+                if (board[i][n - i - 1] == computer)
+                    return 1000;
+                if (board[i][n - i - 1] == player)
+                    return -1000;
+            }
+        }
+    }
+
+    // If no wins, check for potential wins or blocks
+    int heuristic_value = 0;
+
+    // Check rows and columns for potential wins or blocks
+    for (int i = 0; i < n; i++) {
+        int row_count_computer = 0;
+        int row_count_player = 0;
+        int col_count_computer = 0;
+        int col_count_player = 0;
+
+        for (int j = 0; j < n; j++) {
+            // Check rows
+            if (board[i][j] == computer)
+                row_count_computer++;
+            else if (board[i][j] == player)
+                row_count_player++;
+
+            // Check columns
+            if (board[j][i] == computer)
+                col_count_computer++;
+            else if (board[j][i] == player)
+                col_count_player++;
+        }
+
+        // Evaluate rows
+        heuristic_value += evaluate_line(row_count_computer, row_count_player);
+
+        // Evaluate columns
+        heuristic_value += evaluate_line(col_count_computer, col_count_player);
+    }
+
+    // Check diagonals for potential wins or blocks
+    int diag_count_computer1 = 0;
+    int diag_count_player1 = 0;
+    int diag_count_computer2 = 0;
+    int diag_count_player2 = 0;
+
+    for (int i = 0; i < n; i++) {
+        // Check diagonals
+        if (board[i][i] == computer)
+            diag_count_computer1++;
+        else if (board[i][i] == player)
+            diag_count_player1++;
+
+        if (board[i][n - i - 1] == computer)
+            diag_count_computer2++;
+        else if (board[i][n - i - 1] == player)
+            diag_count_player2++;
+    }
+
+    // Evaluate diagonals
+    heuristic_value += evaluate_line(diag_count_computer1, diag_count_player1);
+    heuristic_value += evaluate_line(diag_count_computer2, diag_count_player2);
+
+    return heuristic_value;
+}
+
+// Function implementing the minimax algorithm to find the best move
+int minimax(char board[100][100], int depth, bool Maximise_or_minimise) {
+    int score = evaluate_state();
+    if (score == 1000)
+        return score - depth; // Trying to win in the shortest possible way
+    if (score == -1000)
+        return score + depth; // Trying to win in the shortest possible way
+
+    if (checkfreespaces() == 0)
+        return 0;
+
+    if (depth == 6) {
+        return 0; // Limiting depth to reduce the time taken by the program
+    }
+
+    if (Maximise_or_minimise) {
+        int bestvalue = -10000;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (board[i][j] == ' ') {
+                    board[i][j] = computer;
+                    bestvalue = fmax(bestvalue, minimax(board, depth + 1, Maximise_or_minimise));
+                    board[i][j] = ' ';
+                }
+            }
+        }
+        return bestvalue;
+    } else {
+        int bestvalue = 10000;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (board[i][j] == ' ') {
+                    board[i][j] = player;
+                    bestvalue = fmin(bestvalue, minimax(board, depth + 1, Maximise_or_minimise));
+                    board[i][j] = ' ';
+                }
+            }
+        }
+        return bestvalue;
+    }
+}
+
+// Function for the computer's move in single-player mode
+int computermove() {
+    int bestvalue = -10000;
+    int bestMoveX = -1, bestMoveY = -1;
+    int movemade = 0;
+
+    // Special case for a 3x3 board
+    if (board[1][1] == ' ' && n == 3) {
+        board[1][1] = computer; // Block the win of the player
+        return 0;
+    }
+
+    // Check for a winning move
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == ' ') {
+                // Try this move
+                board[i][j] = computer;
+                if (checkwinner() == computer) {
+                    movemade = 1;
+                    return 0;
+                } else
+                    board[i][j] = ' '; // Undo move
+            }
+        }
+    }
+
+    // If there is no winning move, check for blocking the player
+    if (movemade == 0) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (board[i][j] == ' ') {
+                    // Try this move
+                    board[i][j] = player;
+                    if (checkwinner() == player) {
+                        movemade = 1;
+                        board[i][j] = ' ';
+                        board[i][j] = computer;
+                        return 0;
+                    } else
+                        board[i][j] = ' '; // Undo move
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == ' ') {
+                board[i][j] = computer;
+                int movevalue = minimax(board, 0, false);//finding the best move using minimax fuction defined above
+                board[i][j] = ' ';
+
+                if (movevalue > bestvalue) {
+                    bestMoveX = i;
+                    bestMoveY = j;
+                    bestvalue = movevalue;
+                }
+            }
+        }
+    }
+    board[bestMoveX][bestMoveY] = computer;//executing the move 
+    return 0;
+}
+
+char checkwinner(){
+    //check row
+    int sumrow=0;
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n-1;j++){
+            if(board[i][j]==board[i][j+1] && board[i][j] != ' '){
+            sumrow=sumrow+1;
+            if (sumrow==n-1)
+            return board[i][j];
+            }  
+        }
+        sumrow=0;
+    }
+    //check column
+    int sumcolumn=0;
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n-1;j++){
+            if(board[j][i]==board[j+1][i] && board[j][i] != ' '){
+            sumcolumn=sumcolumn+1;    
+            if (sumcolumn==n-1)
+            return board[j][i];
+            }
+        }
+        sumcolumn=0;
+    }
+    //check diagonal
+    //for left upper corner to right lower corner
+    int sumdiagonal1=0;
+    for (int i=0;i<n;i++){
+        if(board[i][i]==board[i+1][i+1] && board[i][i]!=' '){
+            sumdiagonal1=sumdiagonal1+1;
+            if (sumdiagonal1==n-1)
+            return board[i][i];} }
+    //for right upper corner to lower left corner
+        int sumdiagonal2=0;
+        for (int i=0; i<n;i++){
+            if(board[i][n-i-1]==board[i+1][n-i-2] && board[i][n-i-1] !=' '){
+                sumdiagonal2=sumdiagonal2+1;
+                if (sumdiagonal2==n-1)
+                return board[i][n-i-1];
+            
+        }
+    }
+    return ' ';
+}
+//win or lose or draw declarations
+void printwinner(char winner){
+    if(winner==playerchar_1)
+    printf("%s wins\n",player_1);
+    if(winner==playerchar_2)
+    printf("%s wins\n",player_2);
+    if( winner == player)
+    printf("YOU WIN\n");
+    else if ( winner == computer)
+    printf("YOU LOSE\n");
+    else if (checkfreespaces() == 0)
+    printf("DRAW\n");
+}
+
+int main() {
+    char winner = ' ';
+    int playagain = 1;
+    
+    while(playagain){
+        int gamemode;
+        int error=0;
+        int x=0;
+        int y=0;
+       do{
+        x=0;
+        printf("For Multiplayer press 1\nFor Singleplayer press 0\n");
+        scanf("%d",&gamemode);
+        if(gamemode!=1 && gamemode!=0){
+            printf("invalid\n");
+            x=1;
+        }
+    }while(x==1);
+        
+        do{
+            error=0;
+        printf("Enter the size of board:");
+    scanf("%d",&n);
+    
+    if(n<3 || n>1000){
+        printf("invalid\n");
+        error=1;
+    }
+        }while(error==1);
+    
+    if(gamemode==1){ //name and character of the players for multiplayeer
+        printf("Enter name for player 1:");
+        scanf("%s",player_1);
+        
+        printf("Enter name for player 2:");
+        scanf("%s",player_2);
+        
+         printf("what character %s want to take:", player_1);
+        scanf(" %c",&playerchar_1);
+        
+         printf("what character %s want to take:", player_2);
+        scanf(" %c",&playerchar_2);
+    }
+    if(gamemode==0){ //name and character of the player for singleplayer mode
+        printf("what character you want to take:");
+        scanf(" %c",&player);
+        
+        printf("what character you want computer to use:");
+        scanf(" %c",&computer);
+    }
+
+    resetboard();
+    do
+    {
+       printboard();
+       
+       if(gamemode==1){ //check winner in multiplayer mode
+            player_1_move(); //checking if player 1 has won
+       winner = checkwinner();
+       if (winner != ' ' || checkfreespaces() == 0)
+       {
+           break;
+       }
+       
+       printboard();
+       
+       player_2_move(); //checking if player 2 has won
+       winner = checkwinner();
+       if (winner != ' ' || checkfreespaces() == 0)
+       {
+           break;
+       }
+           
+       }
+       if(gamemode==0){ //check winner in singleplayer mode
+       playermove(); //checking if player has won
+       winner = checkwinner();
+       if (winner != ' ' || checkfreespaces() == 0)
+       {
+           break;
+       }
+       
+       computermove(); //checking if computer has won
+       winner = checkwinner();
+       if (winner != ' ' || checkfreespaces() == 0)
+       {
+           break;
+       }
+       }
+    }while(winner == ' ' && checkfreespaces() != 0);
+    
+    printboard();
+    printwinner(winner);
+    do{ //play again
+    printf("Do you want to play again? (1 for yes, 0 for no): ");
+        scanf("%d", &playagain);
+
+        if(playagain!=1 && playagain!=0){ 
+            printf("invalid\n");
+            y=1;
+        }
+    }while(y==1);
+
+        if (playagain) { //to play new game
+            resetboard();
+        }
+        
+        if(playagain==0) //end up playing
+        printf("Thankyou for playing!");
+    }
+
+    return 0;
+}
