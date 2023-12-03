@@ -1,4 +1,4 @@
-# IC_CP_AlgoRookies
+# ICS_CP_AlgoRookies
 Tic-Tac-Toe Game README
 This is a simple console-based Tic-Tac-Toe game written in C. The game supports both single-player (against the computer) and multiplayer modes. Below are instructions on how to execute the code.
 Environment Setup
